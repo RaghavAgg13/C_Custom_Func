@@ -1,0 +1,90 @@
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <queue>
+#include <map>
+#include <algorithm>
+#include "TreeGenerator.h"
+using namespace std;
+#define ll long long
+ 
+vector<int> visited;
+RandomTree tree;
+map<int, int> from;
+int n,cnt;
+
+vector<int> get_center(int root) {
+    vector<int> degree(n+1, 0), leaves, new_leaves;
+
+    // get degree from adj list
+    for (int i = 1; i <= n; i++) {
+        degree[i] = tree.adj[i].size();
+        if (degree[i] <= 1) {
+            leaves.push_back(i);
+            // if is a leaf, set its degree to 0
+            degree[i] = 0;
+        }
+    }
+
+    cnt = leaves.size();
+
+    while (cnt < n) {
+        new_leaves.clear();
+        for (auto node : leaves) {
+            for (auto neighbor : tree.adj[node]) {
+                degree[neighbor]--;
+                if (degree[neighbor] == 1) {
+                    new_leaves.push_back(neighbor);
+                    // set leaf to degree 0 after processing
+                    degree[neighbor] = 0;
+                }
+            }
+        }
+        cnt += new_leaves.size();
+        leaves = new_leaves;
+    }
+
+    return leaves;
+}
+
+string encode(int root, int parent) {
+    if (visited[root]) return "";
+    visited[root] = 1;
+
+    vector<string> children_code;
+    for (auto children : tree.adj[root]) {
+        if (children == parent) continue;
+        if (visited[children]) continue;
+
+        children_code.push_back(encode(children, root));
+    }
+    sort(children_code.begin(), children_code.end());
+    
+    string code = "(";
+    for (auto x : children_code) code += x;
+    code += ")";
+    
+    return code;
+}
+
+int main(void) {
+    ios_base::sync_with_stdio(0);
+    cin.tie(NULL);
+    
+    n = 20;
+    visited.resize(n+1, 0);
+    from.clear();
+    
+    tree = generateRandomTree(n);
+    visualizeTree(tree);
+
+    int root = tree.root;
+
+    vector<int> centers = get_center(root);
+    for (auto x : centers) cout << x << ' ';
+    cout << '\n';
+
+    visited.assign(n+1, 0);
+    string code = encode(centers[0], -1);
+    cout << code << '\n';
+}
